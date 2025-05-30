@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企画マーケティング体制 再構築・実行支援 SPA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Visualization & Content Choices: 
+        - Slide 1 (Why Now?): 問題点をカード形式で表示。それぞれに課題色（赤）のアクセント。Goal: Inform. Viz: HTML/CSS cards. Interaction: Static.
+        - Slide 2 (What was wrong?): 構造的問題をリストと説明で提示。構造色（青）のアクセント。Goal: Inform. Viz: HTML/CSS lists. Interaction: Static.
+        - Slide 3 (Member Reallocation): Before/Afterをテーブルで比較。改善色（緑）のアクセント。Goal: Compare. Viz: HTML table. Interaction: Static.
+        - Slide 4 (Short-term Actions): チェックリスト形式でタスク、期限、担当者を明示。Goal: Organize. Viz: HTML list/table. Interaction: Static.
+        - Slide 5 (Mid-to-Long Term Roadmap): タイムライン形式で表示。各フェーズの主要施策とKPIを関連付け。Chart.jsでKPI進捗の簡易表現を検討。Goal: Change. Viz: HTML timeline, Chart.js for KPI trends (bar chart). Interaction: Clickable timeline elements for details (future enhancement, static for now).
+        - Slide 6 (Org Design): 新組織図と機能連携ループをHTML/CSSで図示。Goal: Organize. Viz: HTML/CSS diagram. Interaction: Static.
+        - Slide 7 (Simulation of Outcomes): Before/After効果予測をChart.jsの棒グラフで視覚化。Goal: Compare. Viz: Chart.js bar chart. Interaction: Dynamic chart rendering.
+        - Slide 8 (Proposal Summary): 表形式とサマリーを整然と表示。Goal: Inform. Viz: HTML text blocks. Interaction: Static.
+        - Library/Method: Chart.js for charts, TailwindCSS for layout and styling, Vanilla JS for navigation and simple interactions. -->
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8f9fa; /* Light neutral background */
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            border-color: #3b82f6; /* Blue-500 */
+            color: #3b82f6;
+            font-weight: 700;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .problem-card { border-left: 5px solid #ef4444; /* Red-500 */ background-color: #fee2e2; /* Red-100 */ }
+        .structure-card { border-left: 5px solid #3b82f6; /* Blue-500 */ background-color: #dbeafe; /* Blue-100 */ }
+        .improvement-card { border-left: 5px solid #22c55e; /* Green-500 */ background-color: #dcfce7; /* Green-100 */ }
+        .premise-card { border-left: 5px solid #6b7280; /* Gray-500 */ background-color: #f3f4f6; /* Gray-100 */ }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        h1, h2, h3 {
+            color: #1f2937; /* Gray-800 */
+        }
+        p, li, th, td {
+            color: #374151; /* Gray-700 */
+        }
+    </style>
+</head>
+<body class="bg-neutral-100 text-neutral-800 antialiased">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <h1 class="text-xl sm:text-2xl font-bold text-blue-600">企画マーケティング体制 再構築・実行支援</h1>
+                <button id="mobileMenuButton" class="md:hidden text-gray-600 hover:text-gray-800">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+            </div>
+            <nav id="mainNav" class="pb-2 md:pb-0 hidden md:block">
+                <div class="flex flex-col md:flex-row space-y-1 md:space-y-0 md:space-x-1 border-b-2 border-gray-200">
+                    <button class="tab-button active text-sm sm:text-base py-2 px-3 md:px-4 border-b-2 border-transparent hover:border-gray-300 focus:outline-none" onclick="showTab('whyNow')">1. 再構築の必然性</button>
+                    <button class="tab-button text-sm sm:text-base py-2 px-3 md:px-4 border-b-2 border-transparent hover:border-gray-300 focus:outline-none" onclick="showTab('structureAnalysis')">2. 全体構造の解体図</button>
+                    <button class="tab-button text-sm sm:text-base py-2 px-3 md:px-4 border-b-2 border-transparent hover:border-gray-300 focus:outline-none" onclick="showTab('memberRoles')">3. メンバー再配置</button>
+                    <button class="tab-button text-sm sm:text-base py-2 px-3 md:px-4 border-b-2 border-transparent hover:border-gray-300 focus:outline-none" onclick="showTab('shortTermActions')">4. 短期4施策</button>
+                    <button class="tab-button text-sm sm:text-base py-2 px-3 md:px-4 border-b-2 border-transparent hover:border-gray-300 focus:outline-none" onclick="showTab('longTermRoadmap')">5. 中長期ロードマップ</button>
+                    <button class="tab-button text-sm sm:text-base py-2 px-3 md:px-4 border-b-2 border-transparent hover:border-gray-300 focus:outline-none" onclick="showTab('orgDesign')">6. 組織設計図</button>
+                    <button class="tab-button text-sm sm:text-base py-2 px-3 md:px-4 border-b-2 border-transparent hover:border-gray-300 focus:outline-none" onclick="showTab('outcomes')">7. 成果創出シミュレーション</button>
+                    <button class="tab-button text-sm sm:text-base py-2 px-3 md:px-4 border-b-2 border-transparent hover:border-gray-300 focus:outline-none" onclick="showTab('proposal')">8. 上申資料骨子</button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div id="whyNow" class="content-section active">
+            <div class="card mb-6">
+                <h2 class="text-2xl font-bold mb-4 text-red-700">1. Why Now？：再構築の必然性</h2>
+                <p class="mb-6 text-gray-700">このセクションでは、なぜ今、企画マーケティング体制の再構築が不可欠なのか、その背景にある深刻な組織的課題とそれらが引き起こす悪循環を明らかにします。これらの問題は相互に関連し、放置すれば競争力の著しい低下を招くため、即時の行動が求められます。</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="problem-card card">
+                    <h3 class="text-xl font-semibold mb-2">指示系統：複線＋上位不明確</h3>
+                    <p>複数のマネージャーや関係部署からの指示が錯綜し、現場はどの指示を優先すべきか判断に迷っています。結果として、業務の優先順位付けが困難になり、<strong class="text-red-600">生産性の低下</strong>を招いています。</p>
+                </div>
+                <div class="problem-card card">
+                    <h3 class="text-xl font-semibold mb-2">責任：主語不在のタスクが日常化</h3>
+                    <p>「誰がやるのか」が明確でないタスクが常態化し、責任の所在が曖昧になっています。これにより、<strong class="text-red-600">タスクの放置や二重作業</strong>が発生し、無駄なリソース消費と非効率な業務遂行につながっています。</p>
+                </div>
+                <div class="problem-card card">
+                    <h3 class="text-xl font-semibold mb-2">組織構造：役割がポジションでなく“空気”で決まる</h3>
+                    <p>明確な職務記述書や役割定義がなく、個人の裁量や非公式な人間関係によって業務分担が決定されています。この結果、<strong class="text-red-600">特定の個人への業務集中や、役割の重複・漏れ</strong>が生じ、組織全体のボトルネックとなっています。</p>
+                </div>
+                <div class="problem-card card">
+                    <h3 class="text-xl font-semibold mb-2">結果：現場の生産性と戦略との乖離</h3>
+                    <p>上記の組織的課題が複合的に作用し、現場は本来注力すべき戦略的業務ではなく、目の前の混乱対応に追われています。結果として、経営戦略と現場の施策に大きなズレが生じ、<strong class="text-red-600">事業目標の未達や市場機会の逸失</strong>リスクが高まっています。</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="structureAnalysis" class="content-section">
+            <div class="card mb-6">
+                <h2 class="text-2xl font-bold mb-4 text-blue-700">2. 全体構造の解体図：何がズレていたか</h2>
+                <p class="mb-6 text-gray-700">現在の企画マーケティング体制における情報の流れと機能間の断絶を可視化し、非効率の根本原因を特定します。これは個人の責任追及ではなく、構造的な歪みを全員で理解し、建設的な改善へと繋げるための分析です。</p>
+            </div>
+            <div class="space-y-6">
+                <div class="structure-card card">
+                    <h3 class="text-xl font-semibold mb-2">マーケと事業企画の役割混在</h3>
+                    <p>本来、市場分析と施策立案を担うマーケティング機能と、事業計画と推進を担う事業企画機能が明確に分離されておらず、<strong class="text-blue-600">業務の重複や責任の曖昧さ</strong>を生んでいます。これにより、戦略策定から実行までのプロセスにおいて、<strong class="text-blue-600">意思決定の遅延や手戻り</strong>が頻発しています。</p>
+                </div>
+                <div class="structure-card card">
+                    <h3 class="text-xl font-semibold mb-2">分析／営業／実行間での情報非連携</h3>
+                    <p>市場や顧客データの分析結果が営業部門に十分に共有されず、また営業現場からの生の声が企画・マーケティング部門にフィードバックされないなど、部署間の<strong class="text-blue-600">情報のサイロ化</strong>が進んでいます。施策の「実行」が計画と乖離した形で進められることも多く、PDCAサイクルが適切に機能していません。結果として、<strong class="text-blue-600">市場ニーズとのミスマッチや、施策効果の最大化が妨げられています。</strong></p>
+                </div>
+                <div class="structure-card card">
+                    <h3 class="text-xl font-semibold mb-2">戦略に対する逆流（現場視点の施策優先）</h3>
+                    <p>経営層が策定した全体戦略よりも、現場の担当者が個々の判断で考案した施策が優先される傾向にあります。これは、戦略の浸透不足や、現場に戦略実行のための明確な権限と責任が与えられていないことが原因です。この「逆流」により、<strong class="text-blue-600">資源が分散され、組織全体の目標達成に向けた集中力が欠如</strong>しています。</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="memberRoles" class="content-section">
+            <div class="card mb-6">
+                 <h2 class="text-2xl font-bold mb-4 text-green-700">3. メンバー再配置と機能最適化（Before/After）</h2>
+                <p class="mb-6 text-gray-700">新体制における各メンバーの役割と責任範囲を明確化します。「誰が何に責任を持つのか」を具体的に示すことで、各人が自身のミッションを深く理解し、主体的に業務に取り組むことを目指します。これにより、専門性が最大限に活かされ、組織全体のパフォーマンス向上に繋がります。</p>
+            </div>
+            <div class="improvement-card card overflow-x-auto">
+                <table class="w-full min-w-max text-left">
+                    <thead>
+                        <tr class="border-b border-green-300">
+                            <th class="p-3 font-semibold text-green-800">担当者名</th>
+                            <th class="p-3 font-semibold text-green-800">現行の役割（Before）</th>
+                            <th class="p-3 font-semibold text-green-800">再設計後の役割（After）</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-green-200">
+                            <td class="p-3 font-bold">深谷</td>
+                            <td class="p-3">施策立案、一部データ分析</td>
+                            <td class="p-3"><strong>戦略分析・新施策の舵取り</strong>: 市場トレンド分析、競合調査、新規事業・施策の企画と推進、ROI試算</td>
+                        </tr>
+                        <tr class="border-b border-green-200">
+                            <td class="p-3 font-bold">八木</td>
+                            <td class="p-3">データ集計、レポート作成</td>
+                            <td class="p-3"><strong>データ起点でのKPI設計と可視化</strong>: 既存施策のKPI設定、効果測定、ダッシュボード構築、データ活用支援</td>
+                        </tr>
+                        <tr class="border-b border-green-200">
+                            <td class="p-3 font-bold">関塚</td>
+                            <td class="p-3">マネージャー補佐、社内調整</td>
+                            <td class="p-3"><strong>全業務の動線設計と社内連携統括</strong>: 業務フロー最適化、部門間コミュニケーション促進、進捗管理</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold">村瀬</td>
+                            <td class="p-3">チーム全体の進捗管理、一部意思決定</td>
+                            <td class="p-3"><strong>意思決定とチーム評価指標策定</strong>: チーム全体の戦略方向性決定、メンバー育成、評価制度設計</td>
+                        </tr>
+                    </tbody>
+                </table>
+                 <div class="mt-6">
+                    <h4 class="text-lg font-semibold mb-2 text-green-800">担当責任エリア図（イメージ）</h4>
+                    <p class="text-sm text-gray-600">各メンバーの主な責任領域を以下のように視覚化します（実際の図は詳細設計で作成）：</p>
+                    <ul class="list-disc list-inside mt-2 space-y-1 text-sm">
+                        <li><strong>深谷：</strong>戦略立案、新規事業企画、市場・競合分析</li>
+                        <li><strong>八木：</strong>データ分析基盤構築、KPI設計・モニタリング、効果測定レポート</li>
+                        <li><strong>関塚：</strong>業務プロセス標準化、部門間連携ハブ、プロジェクト進捗管理</li>
+                        <li><strong>村瀬：</strong>最終意思決定、チームビジョン策定、リソース配分、評価制度運用</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="shortTermActions" class="content-section">
+            <div class="card mb-6">
+                <h2 class="text-2xl font-bold mb-4 text-green-700">4. 短期4施策：まず“明日からやる”アクション</h2>
+                <p class="mb-6 text-gray-700">再構築を軌道に乗せるため、実務者が迷わず着手できる具体的な短期アクションプランを提示します。各タスクには明確な期限と責任者を設定し、迅速かつ確実な実行を目指します。これらの施策は、組織変革の初期モメンタムを生み出すための重要なステップです。</p>
+            </div>
+            <div class="space-y-4">
+                <div class="improvement-card card">
+                    <h3 class="text-lg font-semibold">1. レポートラインの一元化</h3>
+                    <p><strong>タスク:</strong> 全ての企画マーケティング関連業務におけるレポートラインを関塚氏に一元化し、村瀬氏への報告は関塚氏経由とする。</p>
+                    <p><strong>期限:</strong> 6月第1週</p>
+                    <p><strong>責任者 (R):</strong> 関塚</p>
+                    <p><strong>目的:</strong> 指示系統の混乱を解消し、業務の優先順位付けと進捗管理を効率化する。</p>
+                </div>
+                <div class="improvement-card card">
+                    <h3 class="text-lg font-semibold">2. タスク期限ルールの導入</h3>
+                    <p><strong>タスク:</strong> 全ての新規タスクに対し、開始時に明確な期限を設定し、担当者は期限内に完了する。深谷氏は特に新しい施策の立案においてこのルールを徹底する。</p>
+                    <p><strong>期限:</strong> 6月中旬</p>
+                    <p><strong>責任者 (R):</strong> 深谷</p>
+                    <p><strong>目的:</strong> 責任の曖昧さを排除し、タスクの滞留を防ぎ、各業務の完了を促進する。</p>
+                </div>
+                <div class="improvement-card card">
+                    <h3 class="text-lg font-semibold">3. 営業・マーケ合同定例の実施</h3>
+                    <p><strong>タスク:</strong> 営業部門と企画マーケティング部門の合同定例会議を毎月第3週に開催し、情報共有と連携を強化する。八木氏はデータ活用に関するアジェンダを設定し、会議を主導する。</p>
+                    <p><strong>期限:</strong> 毎月第3週</p>
+                    <p><strong>責任者 (R):</strong> 八木</p>
+                    <p><strong>目的:</strong> 部門間の情報非連携を解消し、顧客ニーズに基づいた施策立案と効果的な営業連携を促進する。</p>
+                </div>
+                <div class="improvement-card card">
+                    <h3 class="text-lg font-semibold">4. 安冨の評価基準設定</h3>
+                    <p><strong>タスク:</strong> 新体制における安冨氏の役割と責任を明確にし、それに基づいた具体的な評価基準を村瀬氏が設定・共有する。</p>
+                    <p><strong>期限:</strong> 6月末</p>
+                    <p><strong>責任者 (R):</strong> 村瀬</p>
+                    <p><strong>目的:</strong> 役割の曖昧さを解消し、個人のパフォーマンス向上と組織貢献を促す。</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="longTermRoadmap" class="content-section">
+             <div class="card mb-6">
+                <h2 class="text-2xl font-bold mb-4 text-green-700">5. 中長期再構築ロードマップ</h2>
+                <p class="mb-6 text-gray-700">短期的な改善に加え、組織全体の持続的な成長と最適化を実現するための中長期的なロードマップです。各フェーズでの主要施策と、それらが目指すKPIを明確に連動させることで、全員が未来の組織像と自身の役割を具体的にイメージできるようにします。このロードマップは、自律的に進化し続ける「動く組織」への道筋を示します。</p>
+            </div>
+            <div class="space-y-8">
+                <div class="improvement-card card">
+                    <h3 class="text-xl font-semibold mb-2">Q3（7月〜9月）：役割制度化と職責KPI導入</h3>
+                    <p class="mb-1"><strong>施策:</strong> 各メンバーの職務記述書（Job Description）を正式に策定し、役割と責任を明文化。それぞれの役割に応じたKPIを設定し、評価制度と連動。</p>
+                    <p class="mb-1"><strong>連動KPI:</strong> 施策KPI達成率、業務フロー改善率。</p>
+                    <p><strong>目的:</strong> 組織構造の曖昧さを完全に解消し、各メンバーが自身のパフォーマンスを向上させるための明確な指針を持つ。</p>
+                </div>
+                <div class="improvement-card card">
+                    <h3 class="text-xl font-semibold mb-2">Q4（10月〜12月）：データ／Salesforce連携最適化</h3>
+                    <p class="mb-1"><strong>施策:</strong> 各種データとSalesforceの連携を強化し、データの一元管理と活用基盤を構築。データに基づいた意思決定を促進。</p>
+                    <p class="mb-1"><strong>連動KPI:</strong> データ活用率、Salesforce活用度。</p>
+                    <p><strong>目的:</strong> データのサイロ化を解消し、より精度の高いマーケティング施策の立案と効果測定を可能にする。</p>
+                </div>
+                <div class="improvement-card card">
+                    <h3 class="text-xl font-semibold mb-2">Q1（1月〜3月）：部門横断チームによる提案型文化形成</h3>
+                    <p class="mb-1"><strong>施策:</strong> 企画マーケティング部門がハブとなり、他部門を巻き込んだ横断的なプロジェクトチームを発足。自律的な提案と実行を推進。</p>
+                    <p class="mb-1"><strong>連動KPI:</strong> 部門横断プロジェクト数、提案からの施策化率、顧客満足度。</p>
+                    <p><strong>目的:</strong> 部門間の断絶を解消し、全社的な視点での価値創造を促進。自律的な提案文化を醸成し、イノベーションを生み出す組織へと進化。</p>
+                </div>
+            </div>
+            <div class="mt-8 card">
+                <h3 class="text-xl font-semibold mb-4 text-center text-green-700">KPI連動施策チャート（イメージ）</h3>
+                <div class="chart-container">
+                    <canvas id="roadmapKpiChart"></canvas>
+                </div>
+                <p class="text-sm text-center mt-2 text-gray-600">各四半期ごとの主要KPI目標値と進捗を視覚化します。</p>
+            </div>
+        </div>
+
+        <div id="orgDesign" class="content-section">
+            <div class="card mb-6">
+                <h2 class="text-2xl font-bold mb-4 text-blue-700">6. 組織設計図：理想の体制と情報の流れ</h2>
+                <p class="mb-6 text-gray-700">再構築後の理想的な企画マーケティング組織の姿と、その中でのスムーズな情報の流れ、そして各機能間の連携メカニズムを視覚的に表現します。「どこに何を渡せば仕事が効率的に回るのか」を誰もが一目で理解できる状態を目指し、部門全体の生産性向上を図ります。</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="structure-card card">
+                    <h3 class="text-xl font-semibold mb-3">新組織チャート（イメージ）</h3>
+                    <div class="space-y-2 text-sm p-3 border border-blue-300 rounded-md bg-blue-50">
+                        <p class="font-bold text-center">経営層（中込）</p>
+                        <p class="text-center">↓</p>
+                        <p class="font-bold text-center">企画マーケティング統括（村瀬）</p>
+                        <p class="text-center">↓</p>
+                        <p class="font-bold text-center">企画マーケティングMgr（関塚）</p>
+                        <div class="flex justify-around pt-1">
+                            <div class="text-center">
+                                <p>↓</p>
+                                <p class="font-semibold">戦略分析・新施策<br>(深谷)</p>
+                            </div>
+                            <div class="text-center">
+                                <p>↓</p>
+                                <p class="font-semibold">データ分析・KPI<br>(八木)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="mt-3 text-sm">各役職の階層と報告ラインを明確に示します。</p>
+                </div>
+
+                <div class="structure-card card">
+                    <h3 class="text-xl font-semibold mb-3">機能連携ループ（イメージ）</h3>
+                     <div class="text-sm p-3 border border-blue-300 rounded-md bg-blue-50">
+                        <p class="text-center">戦略策定 (深谷) → 施策立案 (深谷・八木) → 実行 (関塚主導, 深谷・八木支援) → 効果測定・分析 (八木) → 改善提案 (深谷・八木) → 意思決定 (村瀬) → (戦略策定へループ)</p>
+                    </div>
+                    <p class="mt-3 text-sm">企画マーケティング部門内でのPDCAサイクルと情報の流れを視覚化します。</p>
+                </div>
+            </div>
+            <div class="mt-6 premise-card card">
+                <h3 class="text-xl font-semibold mb-3">横串プロジェクト軸 × 機能責任制</h3>
+                <p class="mb-2">通常の組織構造に加え、特定のテーマや顧客課題解決に向けた「横串プロジェクト」を設置。これらのプロジェクトには、深谷、八木、関塚がそれぞれの機能責任（戦略、データ、連携）を持ちながら参加し、情報とリソースを共有。これにより、日々の業務における機能責任と、プロジェクトを通じた部門横断的な連携を両立させます。</p>
+            </div>
+            <div class="mt-6 premise-card card">
+                <h3 class="text-xl font-semibold mb-3">外注可否マトリクス（業務ごとの適正）</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <h4 class="font-semibold text-gray-700">自社で内製すべき業務:</h4>
+                        <ul class="list-disc list-inside mt-1">
+                            <li>コア戦略策定</li>
+                            <li>重要KPI設定</li>
+                            <li>顧客インサイト分析</li>
+                            <li>主要施策の企画・推進</li>
+                            <li>チームマネジメント</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-700">外部パートナーに委託可能な業務:</h4>
+                        <ul class="list-disc list-inside mt-1">
+                            <li>Webサイト制作・更新</li>
+                            <li>一部のデータ入力・整形</li>
+                            <li>定型レポート作成</li>
+                            <li>クリエイティブ制作（デザイン、コピーライティング）</li>
+                            <li>SEO/SEM運用代行（戦略は内製）</li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="mt-3 text-sm">社内リソースを戦略的な業務に集中させ、非コア業務は効率的に外部委託する判断基準を設けます。</p>
+            </div>
+        </div>
+        
+        <div id="outcomes" class="content-section">
+            <div class="card mb-6">
+                <h2 class="text-2xl font-bold mb-4 text-green-700">7. 成果創出のシミュレーション</h2>
+                <p class="mb-6 text-gray-700">今回の体制再構築がもたらす具体的な成果を定量的にシミュレーションし、その投資対効果（ROI）を明確に示します。これにより、経営層が再構築の価値を具体的に理解し、納得感を持って意思決定できるよう支援します。単なる業務改善に留まらず、事業成果へ直結することを示します。</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-6">
+                 <div class="improvement-card card">
+                    <h3 class="text-xl font-semibold mb-4 text-center">施策KPI達成率</h3>
+                    <div class="chart-container">
+                        <canvas id="kpiAchievementChart"></canvas>
+                    </div>
+                    <p class="text-sm text-center mt-2">Before: 平均約50% → After: 平均約80% (<strong>+30%改善</strong>)</p>
+                </div>
+                <div class="improvement-card card">
+                    <h3 class="text-xl font-semibold mb-4 text-center">会議時間削減率</h3>
+                     <div class="chart-container">
+                        <canvas id="meetingTimeChart"></canvas>
+                    </div>
+                    <p class="text-sm text-center mt-2">Before: 月間約40時間 → After: 月間約15時間 (<strong>-25時間削減</strong>)</p>
+                </div>
+                <div class="improvement-card card">
+                    <h3 class="text-xl font-semibold mb-4 text-center">新規提案数（社内）</h3>
+                    <div class="chart-container">
+                        <canvas id="proposalCountChart"></canvas>
+                    </div>
+                    <p class="text-sm text-center mt-2">Before: 四半期約2件 → After: 四半期約6件 (<strong>+4件増加</strong>)</p>
+                </div>
+                 <div class="improvement-card card">
+                    <h3 class="text-xl font-semibold mb-4 text-center">ヒューマンリスク</h3>
+                    <div class="p-4 flex flex-col items-center justify-center h-full">
+                        <p class="text-3xl font-bold text-red-500 mb-2">高</p>
+                        <p class="text-center mb-4">(属人化、引継ぎ困難、モチベーション低下)</p>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 my-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                        <p class="text-3xl font-bold text-green-500 mb-2">低～中</p>
+                        <p class="text-center">(役割明確化、ドキュメント整備、複数担当制)</p>
+                        <p class="text-sm text-center mt-4">結果: <strong>大幅低減</strong></p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 improvement-card card">
+                <h3 class="text-xl font-semibold mb-2">戦略との乖離度</h3>
+                 <p class="text-center">Before: 大（現場主導、場当たり的な施策） → After: 小（トップダウンとボトムアップの連携）<br><strong class="text-green-600">大幅改善</strong>: 戦略浸透、KPI連動による</p>
+            </div>
+        </div>
+
+        <div id="proposal" class="content-section">
+            <div class="card">
+                <h2 class="text-2xl font-bold mb-6 text-blue-700 text-center">8. 上申資料：中込氏への提案骨子（1ページサマリー）</h2>
+                <p class="mb-6 text-center text-gray-700">経営層（中込氏）に対する最終的な承認とリソースアロケーションを得るための、簡潔かつ説得力のある提案骨子です。</p>
+                
+                <div class="space-y-6">
+                    <section class="premise-card card p-4">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">目的と背景</h3>
+                        <p>現状の企画マーケティング部門は、指示系統の混乱、役割の曖昧さ、部門間連携の不足により、生産性低下と戦略との乖離という深刻な課題を抱えています。このままでは事業目標の達成と市場競争力の維持が困難となるため、抜本的な組織・業務・構造の再構築が喫緊の課題です。本提案は、これらの課題を根本的に解決し、企画マーケティング部門を「成果を創出し続ける戦略実行組織」へと変革することを目的とします。</p>
+                    </section>
+
+                    <section class="premise-card card p-4">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">実行フローと必要支援</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <h4 class="font-semibold">1. 短期施策（6月）：即効性のある行動変容</h4>
+                                <ul class="list-disc list-inside ml-4 text-sm">
+                                    <li>レポートライン一元化、タスク期限ルール導入、営業・マーケ合同定例実施、安冨氏の評価基準設定。</li>
+                                    <li><strong>支援要請:</strong> 各施策の実行に対する経営層からの明確なコミットメントと、関塚・深谷・八木・村瀬各氏への権限付与。</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold">2. 中長期ロードマップ（Q3〜Q1）：持続的な組織変革</h4>
+                                 <ul class="list-disc list-inside ml-4 text-sm">
+                                    <li>Q3: 役割制度化と職責KPI導入</li>
+                                    <li>Q4: データ／Salesforce連携最適化</li>
+                                    <li>Q1: 部門横断チームによる提案型文化形成</li>
+                                    <li><strong>支援要請:</strong> 上記ロードマップ推進のための年間予算（データ基盤構築、外部研修等）承認、および必要に応じた他部門からの協力要請。</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold">3. 組織設計図（新体制）：情報の流れと役割の可視化</h4>
+                                <ul class="list-disc list-inside ml-4 text-sm">
+                                    <li>横串プロジェクト軸と機能責任制を組み合わせた新組織体制への移行。</li>
+                                    <li><strong>支援要請:</strong> 新体制への理解と承認、および組織変更に伴う人事配置への協力。</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="premise-card card p-4">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">投資対効果と期限</h3>
+                        <div class="space-y-2">
+                            <p><strong>投資:</strong> 企画マーケティング部門の組織再構築にかかる時間的・金銭的リソース（データ基盤整備費用、研修費用、外部コンサルティング費用（必要に応じて））。</p>
+                            <div>
+                                <h4 class="font-semibold">期待効果:</h4>
+                                <ul class="list-disc list-inside ml-4 text-sm">
+                                    <li>施策KPI達成率 <strong>30%向上</strong></li>
+                                    <li>月間会議時間 <strong>25時間削減</strong></li>
+                                    <li>新規提案数 <strong>四半期4件増加</strong></li>
+                                    <li>ヒューマンリスクの抜本的低減</li>
+                                    <li>戦略と現場の乖離解消、持続的な成長基盤の確立</li>
+                                </ul>
+                            </div>
+                            <p><strong>完了期限:</strong> 主要な組織再構築は<strong>2026年3月末</strong>までに完了し、その後も継続的な改善運用を行う。</p>
+                        </div>
+                    </section>
+
+                    <p class="text-center font-semibold mt-6 text-gray-800">この再構築は、単なる組織変更ではなく、貴社事業の持続的な成長と競争力強化に直結する戦略的な投資です。中込様のご理解とご承認を賜りたく、何卒よろしくお願い申し上げます。</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="text-center p-4 text-sm text-gray-500 border-t border-gray-200 mt-8">
+        &copy; <span id="currentYear"></span> 企画マーケティング部門. All rights reserved.
+    </footer>
+
+    <script>
+        let currentTab = 'whyNow';
+        const tabs = ['whyNow', 'structureAnalysis', 'memberRoles', 'shortTermActions', 'longTermRoadmap', 'orgDesign', 'outcomes', 'proposal'];
+        const charts = {};
+
+        function showTab(tabId) {
+            document.getElementById(currentTab).classList.remove('active');
+            const currentButton = document.querySelector(`.tab-button[onclick="showTab('${currentTab}')"]`);
+            if (currentButton) currentButton.classList.remove('active');
+            
+            document.getElementById(tabId).classList.add('active');
+            const newButton = document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`);
+            if (newButton) newButton.classList.add('active');
+            
+            currentTab = tabId;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if (tabId === 'outcomes') {
+                renderOutcomeCharts();
+            }
+            if (tabId === 'longTermRoadmap') {
+                renderRoadmapKpiChart();
+            }
+        }
+
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        const mobileMenuButton = document.getElementById('mobileMenuButton');
+        const mainNav = document.getElementById('mainNav');
+        mobileMenuButton.addEventListener('click', () => {
+            mainNav.classList.toggle('hidden');
+        });
+        
+        const navButtons = mainNav.querySelectorAll('.tab-button');
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                if (window.innerWidth < 768) { // md breakpoint
+                    mainNav.classList.add('hidden');
+                }
+            });
+        });
+
+        function createChart(canvasId, chartType, labels, data, label, backgroundColor, borderColor) {
+            if (charts[canvasId]) {
+                charts[canvasId].destroy();
+            }
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            charts[canvasId] = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        backgroundColor: backgroundColor,
+                        borderColor: borderColor,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: { size: 10 }
+                            }
+                        },
+                        x: {
+                             ticks: {
+                                font: { size: 10 },
+                                 callback: function(value, index, values) {
+                                    const label = this.getLabelForValue(value);
+                                    if (label.length > 16) {
+                                        return label.substring(0, 16) + '...';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { font: { size: 12 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                   return tooltipItems[0].label; // Full label for tooltip
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderOutcomeCharts() {
+            createChart('kpiAchievementChart', 'bar', ['Before', 'After'], [50, 80], '施策KPI達成率 (%)', ['rgba(239, 68, 68, 0.2)', 'rgba(34, 197, 94, 0.2)'], ['rgb(239, 68, 68)', 'rgb(34, 197, 94)']);
+            createChart('meetingTimeChart', 'bar', ['Before', 'After'], [40, 15], '月間会議時間 (時間)', ['rgba(239, 68, 68, 0.2)', 'rgba(34, 197, 94, 0.2)'], ['rgb(239, 68, 68)', 'rgb(34, 197, 94)']);
+            createChart('proposalCountChart', 'bar', ['Before', 'After'], [2, 6], '新規提案数 (四半期毎)', ['rgba(239, 68, 68, 0.2)', 'rgba(34, 197, 94, 0.2)'], ['rgb(239, 68, 68)', 'rgb(34, 197, 94)']);
+        }
+        
+        function renderRoadmapKpiChart() {
+            createChart('roadmapKpiChart', 'line', ['Q2 (現状)', 'Q3 目標', 'Q4 目標', 'Q1 目標'], [50, 65, 75, 85], '主要KPI進捗予測 (%)', 'rgba(34, 197, 94, 0.2)', 'rgb(34, 197, 94)');
+        }
+
+        showTab(currentTab); 
+
+    </script>
+</body>
+</html>
